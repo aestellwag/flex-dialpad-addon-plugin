@@ -9,6 +9,10 @@ import {
   withTheme
 } from '@twilio/flex-ui';
 
+// Used for the custom redux state
+import { bindActionCreators } from 'redux';
+import { Actions as DialStatusAction, } from '../../states/DialStatusState';
+
 const ActionsContainer = styled('div')`
   min-width: 88px;
   margin-top: 10px;
@@ -31,7 +35,12 @@ const ActionsContainerListItem = styled('div')`
 `;
 
 class ParticipantActionsButtons extends React.Component {
+
+  // Use to validate if the conferenceOwner was checked
+  #conferenceOwnerCheck = false;
+
   componentWillUnmount() {
+
     const { participant } = this.props;
     if (participant.status === 'recently_left') {
       this.props.clearParticipantComponentState();
@@ -84,6 +93,34 @@ class ParticipantActionsButtons extends React.Component {
     );
   }
 
+  // Here we will be confirming who is the "owner" of the conference to limit the hold/end call buttons to only the primary worker
+  // First we snag the task that the worker has selected in the UI and pull back the task object itself
+  // From there we evaluate the live worker count > 1, meaning that if there is more than one, let's see who the primary agent is
+  // by checking the incomingTransferObject (if it exists), we can see who orignated the transfer and disable the buttons for the non
+  // primary worker(s)
+  
+  confirmConferenceOwner = () => {
+    
+    const selectedTaskSID = this.props.view.selectedTaskSid;
+    const selectedTask = TaskHelper.getTaskByTaskSid(selectedTaskSID);
+    const incomingObjectSID = selectedTask.incomingTransferObject?.worker?.sid || null;
+    const outgoingObject = selectedTask.outgoingTransferObject?.worker?.sid || null;
+
+    if (incomingObjectSID == this.props.myWorkerSID || incomingObjectSID == null) {
+      this.props.setDialStatus({ 
+        conferenceOwner: true
+      });
+    } else if (outgoingObject != null){
+      this.props.setDialStatus({ 
+        conferenceOwner: true
+      });
+    } else {
+      this.props.setDialStatus({ 
+        conferenceOwner: false
+      });
+    }
+  }
+
   renderActions() {
     const { participant, theme, task } = this.props;
 
@@ -102,7 +139,7 @@ class ParticipantActionsButtons extends React.Component {
         <IconButton
           icon={participant.onHold ? `${unholdIcon}` : `${holdIcon}`}
           className="ParticipantCanvas-HoldButton"
-          disabled={!TaskHelper.canHold(task) || participant.status !== 'joined'}
+          disabled={!TaskHelper.canHold(task) || participant.status !== 'joined' || this.props.conferenceOwner != true}
           onClick={this.onHoldParticipantClick}
           themeOverride={theme.ParticipantsCanvas.ParticipantCanvas.Button}
           title={holdParticipantTooltip}
@@ -110,6 +147,7 @@ class ParticipantActionsButtons extends React.Component {
         <IconButton
           icon="Hangup"
           className="ParticipantCanvas-HangupButton"
+          disabled={this.props.conferenceOwner !== true}
           onClick={this.showKickConfirmation}
           themeOverride={theme.ParticipantsCanvas.ParticipantCanvas.HangUpButton}
           title={kickParticipantTooltip}
@@ -119,7 +157,23 @@ class ParticipantActionsButtons extends React.Component {
   }
 
   render() {
+
     if (this.props.view.activeView != 'teams') {
+      // Calling to confirm if the worker is the owner of the conference if there are mulitple workers on the conference
+      const selectedTaskSID = this.props.view.selectedTaskSid;
+      const selectedTask = TaskHelper.getTaskByTaskSid(selectedTaskSID);
+      const liveWorkerCount = selectedTask.conference?.liveWorkerCount;
+
+      if (liveWorkerCount > 1 && this.#conferenceOwnerCheck != true) {
+        this.confirmConferenceOwner();
+        this.#conferenceOwnerCheck = true;
+      } else if (liveWorkerCount == 1 && this.props.conferenceOwner !== true) {
+        this.props.setDialStatus({ 
+          conferenceOwner: true
+        });
+        this.#conferenceOwnerCheck = false;
+      }
+
       return this.props.listMode
       ? (
         <ActionsContainerListItem className="ParticipantCanvas-Actions">
@@ -150,6 +204,14 @@ const mapStateToProps = (state, ownProps) => {
   const participantState = customParticipants[participant.callSid] || {};
   const customParticipantsState = {};
 
+  // Adding the workerSID as we will need to for the conference owner checks
+  const myWorkerSID = state?.flex?.worker?.worker?.sid;
+
+  // Also pulling back the states from the redux store as we will use those later
+  // to manipulate the buttons
+  const customReduxStore = state?.['dial-status'].dialstatus;
+  const conferenceOwner = customReduxStore.conferenceOwner;
+
   return {
     view,
     showKickConfirmation: participantState.showKickConfirmation,
@@ -169,8 +231,16 @@ const mapStateToProps = (state, ownProps) => {
         name: 'customParticipants',
         state: customParticipantsState
       });
-    }
+    },
+    myWorkerSID,
+    conferenceOwner
   };
 };
 
-export default connect(mapStateToProps)(withTheme(ParticipantActionsButtons));
+// Mapping dispatch to props as I will leverage the setDialStatus
+// to change the properties on the redux store, referenced above with this.props.setDialtatus
+const mapDispatchToProps = (dispatch) => ({
+  setDialStatus: bindActionCreators(DialStatusAction.setDialStatus, dispatch),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(withTheme(ParticipantActionsButtons));
