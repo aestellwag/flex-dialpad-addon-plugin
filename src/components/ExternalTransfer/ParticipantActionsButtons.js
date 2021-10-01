@@ -97,12 +97,12 @@ class ParticipantActionsButtons extends React.Component {
   // First we snag the task that the worker has selected in the UI and pull back the task object itself
   // From there we evaluate the live worker count > 1, meaning that if there is more than one, let's see who the primary agent is
   // by checking the incomingTransferObject (if it exists), we can see who orignated the transfer and disable the buttons for the non
-  // primary worker(s)
-  
+  // primary worker(s) 
   confirmConferenceOwner = () => {
-    
-    const selectedTaskSID = this.props.view.selectedTaskSid;
-    const selectedTask = TaskHelper.getTaskByTaskSid(selectedTaskSID);
+
+    // Special callout that we are using the TaskHelper library to pull back the Task
+    // There are a decent amount of helper libraries that can make grabbing info a lot easier!
+    const selectedTask = this.props.selectedTask;
     const incomingObjectSID = selectedTask.incomingTransferObject?.worker?.sid || null;
     const outgoingObject = selectedTask.outgoingTransferObject?.worker?.sid || null;
 
@@ -159,15 +159,12 @@ class ParticipantActionsButtons extends React.Component {
   render() {
 
     if (this.props.view.activeView != 'teams') {
-      // Calling to confirm if the worker is the owner of the conference if there are mulitple workers on the conference
-      const selectedTaskSID = this.props.view.selectedTaskSid;
-      const selectedTask = TaskHelper.getTaskByTaskSid(selectedTaskSID);
-      const liveWorkerCount = selectedTask.conference?.liveWorkerCount;
 
-      if (liveWorkerCount > 1 && this.#conferenceOwnerCheck != true) {
+      // Calling to confirm if the worker is the owner of the conference if there are mulitple workers on the conference
+      if (this.props.liveWorkerCount > 1 && this.#conferenceOwnerCheck != true) {
         this.confirmConferenceOwner();
         this.#conferenceOwnerCheck = true;
-      } else if (liveWorkerCount == 1 && this.props.conferenceOwner !== true) {
+      } else if (this.props.liveWorkerCount == 1 && this.props.conferenceOwner !== true) {
         this.props.setDialStatus({ 
           conferenceOwner: true
         });
@@ -211,6 +208,9 @@ const mapStateToProps = (state, ownProps) => {
   // to manipulate the buttons
   const customReduxStore = state?.['dial-status'].dialstatus;
   const conferenceOwner = customReduxStore.conferenceOwner;
+  const selectedTaskSID = state?.flex?.view?.selectedTaskSid;
+  const selectedTask = TaskHelper.getTaskByTaskSid(selectedTaskSID);
+  const liveWorkerCount = selectedTask.conference?.liveWorkerCount;
 
   return {
     view,
@@ -233,7 +233,9 @@ const mapStateToProps = (state, ownProps) => {
       });
     },
     myWorkerSID,
-    conferenceOwner
+    conferenceOwner,
+    selectedTask,
+    liveWorkerCount
   };
 };
 
