@@ -6,6 +6,7 @@ import ParticipantStatusContainer from './ParticipantStatusContainer';
 import ConferenceButton from './ConferenceButton';
 import ConferenceDialog from './ConferenceDialog';
 import ConferenceMonitor from './ConferenceMonitor';
+import ConfirmHangup from "./ConfirmHangup";
 
 export const loadExternalTransferInterface = (flex, manager) => {
 
@@ -55,6 +56,14 @@ export const loadExternalTransferInterface = (flex, manager) => {
 		<ParticipantStatus
 			key="custom-status"
 		/>, { sortOrder: 2 }
+	);
+
+	// This is adding the Confirmation for the Default Hangup
+	flex.CallCanvasActions.Content.remove('hangup');
+	flex.CallCanvasActions.Content.add(
+		<ConfirmHangup
+			key="custom-actions"
+		/>
 	);
 
 	// This section is for the narrow width ParticipantCanvas, which changes to List Mode,

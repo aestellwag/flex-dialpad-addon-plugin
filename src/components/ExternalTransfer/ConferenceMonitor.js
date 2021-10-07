@@ -49,9 +49,13 @@ class ConferenceMonitor extends React.Component {
     this.setEndConferenceOnExit(conferenceSid, participants, false);
   }
 
+  // For Toyota's Use Case - Updating this to false as we do not want to this for their use case
+  // note that this logic can be removed/consolidated but for the purpose of their use case we are going to "patch" it
+  // This could be enhanced to even be a selectable option by the agent/worker if that would make for a better scenario
+
   handleOnlyTwoParticipants = (conferenceSid, participants) => {
-    console.log('Conference participants dropped to two. Setting endConferenceOnExit to true for all participants.');
-    this.setEndConferenceOnExit(conferenceSid, participants, true);
+    console.log(`Conference participants dropped to two. Setting endConferenceOnExit to false for all participants.  This is specific to Toyotas Use Case`);
+    this.setEndConferenceOnExit(conferenceSid, participants, false);
   }
 
   setEndConferenceOnExit = async (conferenceSid, participants, endConferenceOnExit) => {

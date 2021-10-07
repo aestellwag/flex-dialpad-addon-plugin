@@ -7,26 +7,6 @@ import { loadInternalCallInterface } from './components/InternalCall';
 // import the reducers
 import reducers, { namespace } from './states';
 
-/*
-
-FIXME: Remove once done!
-Summary:
-  Work is complete on the first feature, ended up adding redux as well so we can possibly use that later with the features.
-
-Feature List:
-- Remove Ability for added agent to control the conferense
-    (COMPLETE)
-    -Enhancement - Takes a second for the disable to re-render, see about making this instant
-    (COMPLETE)
-- Add the endConferenceOnExit to false
-- Add the Confirm End Call Dialog to general end call UI
-- Add UI indication if a call fails when adding them to a conference/transferring to them
-- If an ACN call, disable the Hold Button (will need to wait on task information, but can mock up a sample)
-
-*/
-
-
-
 const PLUGIN_NAME = 'DialpadPlugin';
 
 export default class DialpadPlugin extends FlexPlugin {
