@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { Actions, withTheme, Manager, withTaskContext } from '@twilio/flex-ui';
+import { Actions, withTheme, Manager, withTaskContext, Notifications, NotificationType, NotificationBar } from '@twilio/flex-ui';
 import Button from '@material-ui/core/Button';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -44,6 +44,38 @@ class ConferenceDialog extends React.Component {
     this.closeDialog();
   }
 
+  // Notification fired off if we fail to add a participant with the "+"/add button
+  alertFailedParticipantAdd(to) {
+
+      Notifications.registerNotification({
+        id: to,
+        closeButton: true,
+        content: alert,
+        timeout: 8000,
+        type: NotificationType.warning,
+        actions: [
+            <NotificationBar.Action
+                onClick={(_, notification) => {
+                    Flex.Notifications.dismissNotification(notification);
+                }}
+                label={`Failed to call ${to}, confirm the number dialed!`}
+            />
+        ],
+        options: {
+          browser: {
+              title: "Custom Notification",
+              body:`Failed to call ${to}, confirm the number dialed!`
+          }
+      }
+    });
+      // Fire off the Notification we just registered
+      Notifications.showNotification(to);
+      // Delete the alert, the alert will still show in the UI but this gives the ability
+      // if the agent happens to toggle assistance off/on again, that a new alert will pop up
+      Notifications.registeredNotifications.delete(to);
+  }
+  
+
   addConferenceParticipant = async () => {
     const to = this.state.conferenceTo;
 
@@ -71,6 +103,8 @@ class ConferenceDialog extends React.Component {
 
     } catch (error) {
       console.error('Error adding conference participant:', error);
+      this.alertFailedParticipantAdd(to);
+
     }
     this.setState({ conferenceTo: '' });
   }

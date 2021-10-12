@@ -139,10 +139,10 @@ class ParticipantActionsButtons extends React.Component {
         <IconButton
           icon={participant.onHold ? `${unholdIcon}` : `${holdIcon}`}
           className="ParticipantCanvas-HoldButton"
-          disabled={!TaskHelper.canHold(task) || participant.status !== 'joined' || this.props.conferenceOwner != true}
+          disabled={!TaskHelper.canHold(task) || participant.status !== 'joined' || this.props.conferenceOwner != true || this.props.emergencyCall }
           onClick={this.onHoldParticipantClick}
           themeOverride={theme.ParticipantsCanvas.ParticipantCanvas.Button}
-          title={holdParticipantTooltip}
+          title={this.props.emergencyCall ? "Disabled For Emergency Calls" : holdParticipantTooltip}
         />
         <IconButton
           icon="Hangup"
@@ -211,6 +211,13 @@ const mapStateToProps = (state, ownProps) => {
   const selectedTaskSID = state?.flex?.view?.selectedTaskSid;
   const selectedTask = TaskHelper.getTaskByTaskSid(selectedTaskSID);
   const liveWorkerCount = selectedTask.conference?.liveWorkerCount;
+  let emergencyCall = false;
+  
+  // TC Specific Use Case - Change name to the ACN Queues, could also look at pulling in a task attribute if necessary
+  // For this sample, we will simply go by queueName for the selected task
+  if(selectedTask.queueName === "Everyone") {
+    emergencyCall = true;
+  }
 
   return {
     view,
@@ -235,7 +242,8 @@ const mapStateToProps = (state, ownProps) => {
     myWorkerSID,
     conferenceOwner,
     selectedTask,
-    liveWorkerCount
+    liveWorkerCount,
+    emergencyCall
   };
 };
 
